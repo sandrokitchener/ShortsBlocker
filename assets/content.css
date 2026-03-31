@@ -1,0 +1,15 @@
+html[data-nmr-site="youtube"] ytd-reel-shelf-renderer,
+html[data-nmr-site="youtube"] ytd-reel-video-renderer,
+html[data-nmr-site="youtube"] ytd-rich-shelf-renderer[is-shorts],
+html[data-nmr-site="youtube"] ytm-shorts-lockup-view-model,
+html[data-nmr-site="youtube"] a[href="/shorts/"],
+html[data-nmr-site="youtube"] a[href^="/shorts/"],
+html[data-nmr-site="instagram"] a[href="/reels/"],
+html[data-nmr-site="instagram"] a[href^="/reel/"],
+html[data-nmr-site="instagram"] a[href^="/reels/"],
+html[data-nmr-site="facebook"] a[href*="/reel/"],
+html[data-nmr-site="facebook"] a[href*="/reels/"],
+html[data-nmr-site="facebook"] [aria-label="Reels"],
+[data-nmr-hidden] {
+  display: none !important;
+}

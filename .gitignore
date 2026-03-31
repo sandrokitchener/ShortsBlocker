@@ -1,0 +1,6 @@
+Thumbs.db
+.DS_Store
+*.zip
+node_modules/
+.output/
+.wxt/

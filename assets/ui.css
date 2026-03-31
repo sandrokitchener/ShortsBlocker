@@ -1,0 +1,19 @@
+@import "uikit/dist/css/uikit.min.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", "Inter", sans-serif;
+}
+
+html,
+body {
+  min-width: 24rem;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: #0f172a;
+  background:
+    radial-gradient(circle at top, rgba(251, 191, 36, 0.18), transparent 28rem),
+    linear-gradient(180deg, #fff7ed 0%, #ffffff 55%, #eef2ff 100%);
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>No More Reels</title>
+  </head>
+  <body>
+    <main class="mx-auto flex min-h-screen max-w-4xl items-center px-6 py-10">
+      <section class="uk-card uk-card-default uk-card-body w-full rounded-[32px] border border-slate-200/70 bg-white/95 shadow-[0_32px_120px_-48px_rgba(15,23,42,0.55)]">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="uk-text-meta !m-0 uppercase tracking-[0.2em] text-amber-700">No More Reels</p>
+            <h1 class="mt-2 text-4xl font-semibold leading-tight text-slate-950">Short-form video blocked before it could load.</h1>
+          </div>
+          <span class="uk-label rounded-full bg-amber-300 px-3 py-1 text-slate-900">Chrome MVP</span>
+        </div>
+        <p class="mt-5 max-w-2xl text-base leading-7 text-slate-700">
+          This page matched one of the direct short-video routes we are intercepting right now, so the extension redirected you here instead of handing the session over to the feed.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a class="uk-button uk-button-secondary rounded-full normal-case" href="https://www.youtube.com/">YouTube home</a>
+          <a class="uk-button uk-button-default rounded-full normal-case" href="https://www.instagram.com/">Instagram home</a>
+          <a class="uk-button uk-button-default rounded-full normal-case" href="https://www.facebook.com/">Facebook home</a>
+          <a class="uk-button uk-button-default rounded-full normal-case" href="https://www.linkedin.com/feed/">LinkedIn feed</a>
+          <button id="close-tab" class="uk-button uk-button-default rounded-full normal-case" type="button">Close tab</button>
+        </div>
+        <p class="mt-6 text-sm leading-6 text-slate-500">
+          Extension build <span id="version">dev</span>. Feed-strip heuristics still run separately on normal pages where Shorts and Reels are embedded inside larger timelines.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

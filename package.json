@@ -1,0 +1,24 @@
+{
+  "name": "nomoreereels",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build -b chrome",
+    "zip": "wxt zip -b chrome",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@webext-core/messaging": "^2.3.0",
+    "uikit": "^3.25.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/node": "^25.5.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "wxt": "^0.20.20"
+  }
+}
