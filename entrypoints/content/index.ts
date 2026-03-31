@@ -3,7 +3,7 @@ import { browser } from 'wxt/browser';
 import '~/assets/content.css';
 import { onMessage, sendMessage } from '~/utils/messaging';
 import { getSiteConfig, isDirectShortPath, supportedMatches } from '~/utils/sites';
-import type { PageState } from '~/utils/types';
+import { siteLabels, type PageState } from '~/utils/types';
 
 export default defineContentScript({
   matches: supportedMatches,
@@ -28,8 +28,8 @@ export default defineContentScript({
     let lastReportKey = '';
 
     const runScan = () => {
-      removeSelectorMatches(document, activeSite.removeSelectors);
-      removeLinkContainers(document, activeSite.linkRules);
+      removeSelectorMatches(document, activeSite.removeSelectors, activeSite.id);
+      removeLinkContainers(document, activeSite.linkRules, activeSite.id);
 
       if (activeSite.id === 'linkedin') {
         removeLinkedInVideoModules(document, activeSite.textSectionPatterns ?? []);
@@ -86,7 +86,13 @@ export default defineContentScript({
 
     function reportState() {
       const state = buildPageState(activeSite.id);
-      const reportKey = JSON.stringify([state.url, state.hiddenCount, state.site]);
+      const reportKey = JSON.stringify([
+        state.url,
+        state.hiddenCount,
+        state.placeholderCount,
+        state.guardedLinkCount,
+        state.site,
+      ]);
 
       if (reportKey === lastReportKey) {
         return;
@@ -104,18 +110,23 @@ function buildPageState(site: PageState['site']): PageState {
     hostname: window.location.hostname,
     url: window.location.href,
     hiddenCount: document.querySelectorAll('[data-nmr-hidden]').length,
+    placeholderCount: document.querySelectorAll('[data-nmr-placeholder="true"]').length,
     guardedLinkCount: document.querySelectorAll('[data-nmr-guarded]').length,
     directPathBlocked: false,
     lastScanAt: Date.now(),
   };
 }
 
-function removeSelectorMatches(root: ParentNode, selectors: string[]) {
+function removeSelectorMatches(
+  root: ParentNode,
+  selectors: string[],
+  site: PageState['site'],
+) {
   for (const selector of selectors) {
     const matches = root.querySelectorAll(selector);
 
     for (const match of matches) {
-      hideNode(match, 'selector');
+      hideNode(match, site, 'selector');
     }
   }
 }
@@ -123,6 +134,7 @@ function removeSelectorMatches(root: ParentNode, selectors: string[]) {
 function removeLinkContainers(
   root: ParentNode,
   rules: Array<{ selector: string; closestSelectors: string[] }>,
+  site: PageState['site'],
 ) {
   for (const rule of rules) {
     const matches = root.querySelectorAll(rule.selector);
@@ -130,7 +142,7 @@ function removeLinkContainers(
     for (const match of matches) {
       markGuardedLink(match);
       const container = findClosestContainer(match, rule.closestSelectors);
-      hideNode(container ?? match, 'link');
+      hideNode(container ?? match, site, 'link');
     }
   }
 }
@@ -152,7 +164,7 @@ function removeLinkedInVideoModules(root: ParentNode, patterns: RegExp[]) {
 
     for (const pattern of patterns) {
       if (pattern.test(text)) {
-        hideNode(candidate, 'linkedin-video-module');
+        hideNode(candidate, 'linkedin', 'linkedin-video-module');
         break;
       }
     }
@@ -185,11 +197,12 @@ function climb(node: Element, steps: number) {
   return current;
 }
 
-function hideNode(node: Element | null, reason: string) {
+function hideNode(node: Element | null, site: PageState['site'], reason: string) {
   if (!(node instanceof HTMLElement) || node.dataset.nmrHidden) {
     return;
   }
 
+  injectPlaceholder(node, site, reason);
   node.dataset.nmrHidden = reason;
 }
 
@@ -258,4 +271,82 @@ function navigateToBlockedPage(targetUrl: string) {
   }
 
   window.location.replace(nextUrl);
+}
+
+function injectPlaceholder(
+  node: HTMLElement,
+  site: PageState['site'],
+  reason: string,
+) {
+  if (!shouldRenderPlaceholder(node) || node.dataset.nmrPlaceholderRendered) {
+    return;
+  }
+
+  const parent = node.parentElement;
+
+  if (!parent) {
+    return;
+  }
+
+  node.dataset.nmrPlaceholderRendered = 'true';
+
+  const placeholder = document.createElement('div');
+  const rect = node.getBoundingClientRect();
+  const minHeight = clamp(Math.round(rect.height || 112), 88, 240);
+  const siteLabel = siteLabels[site];
+  const message = getPlaceholderMessage(siteLabel, reason);
+
+  placeholder.dataset.nmrPlaceholder = 'true';
+  placeholder.style.minHeight = `${minHeight}px`;
+  placeholder.innerHTML = `
+    <p class="nmr-placeholder__eyebrow">ShortsBlocker</p>
+    <p class="nmr-placeholder__title">Short-form video removed</p>
+    <p class="nmr-placeholder__body">${escapeHtml(message)}</p>
+  `;
+
+  parent.insertBefore(placeholder, node.nextSibling);
+}
+
+function shouldRenderPlaceholder(node: HTMLElement) {
+  if (node.closest('[data-nmr-placeholder="true"]')) {
+    return false;
+  }
+
+  const rect = node.getBoundingClientRect();
+  const hasRichMedia = Boolean(
+    node.querySelector('img, video, picture, canvas, svg, ytd-thumbnail, yt-image'),
+  );
+  const looksLargeEnough = rect.height >= 72 || rect.width >= 220;
+  const looksStructural = node.childElementCount >= 3 || hasRichMedia;
+  const likelyTinyNavItem =
+    (node.tagName === 'A' || node.getAttribute('role') === 'link') &&
+    rect.height < 54 &&
+    rect.width < 200 &&
+    !hasRichMedia;
+
+  return !likelyTinyNavItem && (looksLargeEnough || looksStructural);
+}
+
+function getPlaceholderMessage(siteLabel: string, reason: string) {
+  switch (reason) {
+    case 'link':
+      return `${siteLabel} tried to surface a short-video entry point here. The extension intercepted it and replaced it with this placeholder for testing.`;
+    case 'linkedin-video-module':
+      return `${siteLabel} injected a video recommendation module here. The extension removed it so the feed can continue without autoplay-style bait.`;
+    default:
+      return `${siteLabel} rendered a short-form video block here. The extension removed that surface and left this card behind so you can verify the blocker is actually firing.`;
+  }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }

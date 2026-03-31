@@ -5,6 +5,7 @@ export interface PageState {
   hostname: string;
   url: string;
   hiddenCount: number;
+  placeholderCount: number;
   guardedLinkCount: number;
   directPathBlocked: boolean;
   lastScanAt: number;

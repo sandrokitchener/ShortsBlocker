@@ -50,6 +50,10 @@ function render(state: PageState | null, isLoading: boolean) {
             <dd class="mt-1 font-medium text-slate-900">${state ? state.hiddenCount : 0}</dd>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <dt class="text-slate-500">Placeholders</dt>
+            <dd class="mt-1 font-medium text-slate-900">${state ? state.placeholderCount : 0}</dd>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <dt class="text-slate-500">Guarded links</dt>
             <dd class="mt-1 font-medium text-slate-900">${state ? state.guardedLinkCount : 0}</dd>
           </div>
@@ -78,7 +82,7 @@ function formatCount(state: PageState | null) {
     return 'No data yet';
   }
 
-  return `${state.hiddenCount} hidden`;
+  return `${state.placeholderCount} placeholders`;
 }
 
 function formatStatus(state: PageState | null, isLoading: boolean) {
