@@ -1,6 +1,6 @@
-# No More Reels
+# ShortsBlocker
 
-An early Chrome-first extension prototype for removing short-form video surfaces before they can grab attention.
+`No More Reels` is the current extension name for this early Chrome-first prototype focused on removing short-form video surfaces before they can grab attention.
 
 ## Stack
 
