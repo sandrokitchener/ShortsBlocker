@@ -20,7 +20,7 @@ export default defineContentScript({
     document.documentElement.dataset.nmrSite = activeSite.id;
 
     if (isDirectShortPath(activeSite, window.location.pathname)) {
-      window.location.replace(browser.runtime.getURL('/blocked.html'));
+      navigateToBlockedPage(window.location.href);
       return;
     }
 
@@ -54,6 +54,14 @@ export default defineContentScript({
       runScan();
       return buildPageState(activeSite.id);
     });
+
+    document.addEventListener(
+      'click',
+      (event) => {
+        interceptShortNavigation(event, activeSite);
+      },
+      true,
+    );
 
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
@@ -96,6 +104,7 @@ function buildPageState(site: PageState['site']): PageState {
     hostname: window.location.hostname,
     url: window.location.href,
     hiddenCount: document.querySelectorAll('[data-nmr-hidden]').length,
+    guardedLinkCount: document.querySelectorAll('[data-nmr-guarded]').length,
     directPathBlocked: false,
     lastScanAt: Date.now(),
   };
@@ -119,6 +128,7 @@ function removeLinkContainers(
     const matches = root.querySelectorAll(rule.selector);
 
     for (const match of matches) {
+      markGuardedLink(match);
       const container = findClosestContainer(match, rule.closestSelectors);
       hideNode(container ?? match, 'link');
     }
@@ -181,4 +191,71 @@ function hideNode(node: Element | null, reason: string) {
   }
 
   node.dataset.nmrHidden = reason;
+}
+
+function markGuardedLink(node: Element) {
+  if (node instanceof HTMLElement) {
+    node.dataset.nmrGuarded = 'true';
+  }
+}
+
+function interceptShortNavigation(event: MouseEvent, site: ReturnType<typeof getSiteConfig>) {
+  if (!site || event.defaultPrevented) {
+    return;
+  }
+
+  const target = event.target;
+
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  const anchor = target.closest('a[href]');
+
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return;
+  }
+
+  let href: URL;
+
+  try {
+    href = new URL(anchor.href, window.location.href);
+  } catch {
+    return;
+  }
+
+  if (!isBlockedUrlForSite(site, href)) {
+    return;
+  }
+
+  anchor.dataset.nmrGuarded = 'true';
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  navigateToBlockedPage(href.toString());
+}
+
+function isBlockedUrlForSite(
+  site: NonNullable<ReturnType<typeof getSiteConfig>>,
+  url: URL,
+) {
+  const hostnameMatches =
+    site.hostPattern.test(url.hostname) || url.hostname === window.location.hostname;
+
+  if (!hostnameMatches) {
+    return false;
+  }
+
+  return isDirectShortPath(site, url.pathname);
+}
+
+function navigateToBlockedPage(targetUrl: string) {
+  const blockedUrl = browser.runtime.getURL('/blocked.html');
+  const nextUrl = `${blockedUrl}?target=${encodeURIComponent(targetUrl)}`;
+
+  if (window.location.href === nextUrl) {
+    return;
+  }
+
+  window.location.replace(nextUrl);
 }

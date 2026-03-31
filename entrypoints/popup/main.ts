@@ -16,7 +16,7 @@ render(null, true);
 void refresh();
 
 async function refresh() {
-  const state = await sendMessage('getActiveTabState', null);
+  const state = await sendMessage('rescanActiveTab', null);
   render(state, false);
 }
 
@@ -45,6 +45,14 @@ function render(state: PageState | null, isLoading: boolean) {
             <dt class="text-slate-500">Last scan</dt>
             <dd class="mt-1 font-medium text-slate-900">${state ? new Date(state.lastScanAt).toLocaleTimeString() : 'Waiting'}</dd>
           </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <dt class="text-slate-500">Hidden surfaces</dt>
+            <dd class="mt-1 font-medium text-slate-900">${state ? state.hiddenCount : 0}</dd>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <dt class="text-slate-500">Guarded links</dt>
+            <dd class="mt-1 font-medium text-slate-900">${state ? state.guardedLinkCount : 0}</dd>
+          </div>
         </dl>
         <div class="mt-5 flex flex-wrap gap-3">
           <button id="rescan" class="uk-button uk-button-secondary rounded-full normal-case">Rescan tab</button>
@@ -70,19 +78,19 @@ function formatCount(state: PageState | null) {
     return 'No data yet';
   }
 
-  return `${state.hiddenCount} removed`;
+  return `${state.hiddenCount} hidden`;
 }
 
 function formatStatus(state: PageState | null, isLoading: boolean) {
   if (isLoading) {
-    return 'Checking the active tab and refreshing the latest removal count.';
+    return 'Running a fresh scan on the active tab and checking navigation guards.';
   }
 
   if (!state) {
     return 'Open a supported site, then reload that tab once after installing the extension so the content script can start reporting in.';
   }
 
-  return `${siteLabels[state.site]} detected on ${escapeHtml(state.hostname)}.`;
+  return `${siteLabels[state.site]} detected on ${escapeHtml(state.hostname)}. Counts are heuristic, not a guarantee that every short-video surface was blocked.`;
 }
 
 function escapeHtml(value: string) {
